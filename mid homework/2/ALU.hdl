@@ -1,0 +1,55 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/2/ALU.hdl
+
+/**
+ * ALU (Arithmetic Logic Unit)
+ * See book for specification.
+ */
+
+CHIP ALU {
+    IN  
+        x[16], y[16],
+        zx, nx,
+        zy, ny,
+        f,  no;
+    OUT 
+        out[16],
+        zr,
+        ng;
+
+    PARTS:
+        // process x
+        Mux16(a=x, b=false, sel=zx, out=xZero);
+        Not16(in=xZero, out=xZeroNot);
+        Mux16(a=xZero, b=xZeroNot, sel=nx, out=x1);
+
+        // process y
+        Mux16(a=y, b=false, sel=zy, out=yZero);
+        Not16(in=yZero, out=yZeroNot);
+        Mux16(a=yZero, b=yZeroNot, sel=ny, out=y1);
+
+        // f: select between x&y and x+y
+        And16(a=x1, b=y1, out=andXY);
+        Add16(a=x1, b=y1, out=addXY);
+        Mux16(a=andXY, b=addXY, sel=f, out=aluCore);
+
+        // no: optional negation of result
+        Not16(in=aluCore, out=aluCoreNot);
+        Mux16(
+            a=aluCore,
+            b=aluCoreNot,
+            sel=no,
+            out=out,
+            out[0..7]=low,
+            out[8..15]=high,
+            out[15]=ng
+        );
+
+        // zr: 1 iff out == 0
+        Or8Way(in=low,  out=orLow);
+        Or8Way(in=high, out=orHigh);
+        Or(a=orLow, b=orHigh, out=nonZero);
+        Not(in=nonZero, out=zr);
+}
